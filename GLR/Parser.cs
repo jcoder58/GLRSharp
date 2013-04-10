@@ -31,5 +31,9 @@ namespace GLR {
 
             _ItemSets = ItemSet<T>.BuildAll(_Grammar, _Logger);
         }
+
+        public bool Parse(ISource<T> source) {
+            return false;
+        }
     }
 }

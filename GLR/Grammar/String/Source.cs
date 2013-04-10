@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GLR {
+namespace GLR.Grammar.String {
     public class Source : ISource<string> {
         public string SourceText { get; private set; }
         public int Offset { get; private set; }
@@ -15,15 +15,15 @@ namespace GLR {
             Offset = offset;
         }
 
-        public Source Move(int length) {
+        public ISource<string> Move(int length) {
             return new Source(SourceText, Offset + length);
         }
 
-        public Source MoveTo(int offset) {
+        public ISource<string> MoveTo(int offset) {
             return new Source(SourceText, offset);
         }
 
-        public Source Skip(Func<string, int, int> Skip) {
+        public ISource<string> Skip(Func<string, int, int> Skip) {
             int newOffset = Skip(SourceText, Offset);
             if (newOffset != Offset)
                 return new Source(SourceText, newOffset);
@@ -48,7 +48,7 @@ namespace GLR {
                 return bullet + SourceText;
             if (Offset == SourceText.Length)
                 return SourceText + bullet;
-            return String.Format("{0}{1}{2}", SourceText.Substring(0, Offset), bullet, SourceText.Substring(Offset));
+            return System.String.Format("{0}{1}{2}", SourceText.Substring(0, Offset), bullet, SourceText.Substring(Offset));
         }
 
 

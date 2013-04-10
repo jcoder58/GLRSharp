@@ -12,5 +12,6 @@ namespace GLR.Grammar.String {
         public Parser(NonTerminal grammar, Action<LogLevel, string> log, LogLevel level = LogLevel.Info)
             : base(grammar, log, level) {
         }
+
     }
 }
