@@ -111,6 +111,12 @@ namespace GLR {
                 logger.LogTrace("{0}: {1}", kv.Key, kv.Value.SetNumber);
             }
 
+            logger.LogTrace("Reductions");
+            foreach (var kv in Reductions) {
+                foreach (var r in kv.Value)
+                    logger.LogTrace("{0}: {1}", kv.Key, r);
+            }
+
         }
 
         public static string ItemSetsToString(HashSet<ItemSet<T>> sets) {

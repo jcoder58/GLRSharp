@@ -33,9 +33,29 @@ namespace GLR {
 
             FirstFollow<T> ff = new FirstFollow<T>(_ItemSets, _Logger);
 
+            MakeReductions(ff);
+
             if (_Logger.Trace) {
                 foreach (var itemSet in _ItemSets)
                     itemSet.Log(_Logger);
+            }
+        }
+
+        private void MakeReductions(FirstFollow<T> ff) {
+            foreach (var production in ff.ExtendedGrammar) {
+                var lastSymbol = production.RHS.Last();
+                if (lastSymbol.Symbol is EOS<T> )
+                    continue;
+                HashSet<ISymbol<T>> follow;
+                if (!ff.Follow.TryGetValue(lastSymbol, out follow))
+                    follow = ff.Follow[production.LHS];
+                var endSet = lastSymbol.Next;
+                foreach (var symbol in follow) {
+                    HashSet<Production<T>> r;
+                    if (!endSet.Reductions.TryGetValue(symbol, out r))
+                        endSet.Reductions.Add(symbol, r = new HashSet<Production<T>>());
+                   r.Add(production.Production);
+                }
             }
         }
 
