@@ -5,6 +5,10 @@ using System.Text;
 
 namespace GLR.Grammar {
     internal class EOS<T> : Terminal<T> {
+        public override bool IsEndOfString {
+            get { return true; }
+        }
+
         public override bool IsEpsilon {
             get { return false; }
         }

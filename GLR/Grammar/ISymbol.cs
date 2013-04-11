@@ -9,6 +9,7 @@ namespace GLR.Grammar {
         bool IsNonTerminal { get; }
         bool IsTerminal { get; }
         bool IsEpsilon { get; }
+        bool IsEndOfString { get; }
         Match<T> Match(ISource<T> source);
 
         void Visit( Action<ISymbol<T>> action, Set<ISymbol<T>> visited);

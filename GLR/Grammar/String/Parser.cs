@@ -13,5 +13,9 @@ namespace GLR.Grammar.String {
             : base(grammar, log, level) {
         }
 
+        public bool Parse(string sourceText) {
+            return base.Parse(new Source(sourceText));
+        }
+
     }
 }

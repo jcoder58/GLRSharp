@@ -17,5 +17,9 @@ namespace GLR.Grammar {
 
         public override bool IsEpsilon { get { return true; } }
 
+        public override bool IsEndOfString {
+            get { return false; }
+        }
+
     }
 }

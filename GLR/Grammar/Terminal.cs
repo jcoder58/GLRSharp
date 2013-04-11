@@ -12,6 +12,7 @@ namespace GLR.Grammar {
         public bool IsTerminal { get { return !IsNonTerminal; } }
 
         public abstract bool IsEpsilon { get; }
+        public abstract bool IsEndOfString { get; }
 
         public abstract Match<T> Match(ISource<T> source);
 

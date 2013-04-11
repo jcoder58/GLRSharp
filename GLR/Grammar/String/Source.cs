@@ -10,7 +10,7 @@ namespace GLR.Grammar.String {
 
         public bool AtEnd { get { return Offset >= SourceText.Length; } }
 
-        public Source(string sourceText, int offset) {
+        public Source(string sourceText, int offset = 0) {
             SourceText = sourceText;
             Offset = offset;
         }

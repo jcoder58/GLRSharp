@@ -14,8 +14,8 @@ namespace GLRTest {
         }
 
         private static void TestGrammar() {
-            TestLALR2();
             TestLALR();
+            TestLALR2();
             TestStringGrammar();
         }
 
@@ -35,8 +35,10 @@ namespace GLRTest {
             V.RHS = "x".T();
             V.RHS = "*".T() < E;
 
-            Parser parser = new Parser(S, Log, LogLevel.Trace);
             Log(LogLevel.Info, "End TestLALR2()");
+            Parser parser = new Parser(S, Log, LogLevel.Trace);
+            var ok = parser.Parse("x=*x");
+            Debug.Assert(ok);
         }
         
         private static void TestStringGrammar() {
@@ -52,6 +54,9 @@ namespace GLRTest {
 
             Parser parser = new Parser( A, Log, LogLevel.Trace );
             Log(LogLevel.Info, "End TestStringGrammar()");
+
+            var ok = parser.Parse(new Source( "a", 0));
+            Debug.Assert(ok);
         }
 
         private static void TestLALR() {
@@ -65,7 +70,8 @@ namespace GLRTest {
             E.RHS = E < "+".T() < E;
 
             Parser parser = new Parser(S, Log, LogLevel.Trace);
-            parser.Parse(new Source("i+i*i", 0));
+            var ok = parser.Parse("i+i*i");
+            Debug.Assert(ok);
             Log(LogLevel.Info, "End TestLALR()");
         }
 

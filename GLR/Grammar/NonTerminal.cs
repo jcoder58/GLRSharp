@@ -21,6 +21,7 @@ namespace GLR.Grammar {
             }
         }
         public bool IsEpsilon { get { return false; } }
+        public bool IsEndOfString { get { return false; } }
         public bool IsNonTerminal { get { return true; } }
         public bool IsTerminal { get { return !IsNonTerminal; } }
 
