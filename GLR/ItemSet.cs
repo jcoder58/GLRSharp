@@ -9,12 +9,18 @@ namespace GLR {
     class ItemSet<T> {
         public int SetNumber { get; private set; }
         public Set<DottedRule<T>> Rules { get; private set; }
+        public Dictionary<ISymbol<T>, ItemSet<T>> Translation { get; private set; }
         public Dictionary<ISymbol<T>, ItemSet<T>> Goto { get; private set; }
+        public Dictionary<ISymbol<T>, HashSet<ItemSet<T>>> Shifts { get; private set; }
+        public Dictionary<ISymbol<T>, HashSet<Production<T>>> Reductions {get; private set;}
 
         public ItemSet(int setNumber, Set<DottedRule<T>> rules) {
             SetNumber = setNumber;
             Rules = new Set<DottedRule<T>>();
+            Translation = new Dictionary<ISymbol<T>, ItemSet<T>>();
             Goto = new Dictionary<ISymbol<T>, ItemSet<T>>();
+            Shifts = new Dictionary<ISymbol<T>, HashSet<ItemSet<T>>>();
+            Reductions = new Dictionary<ISymbol<T>, HashSet<Production<T>>>();
             if (rules != null) {
                 foreach (var rule in rules)
                     Rules.Add(rule);
@@ -47,9 +53,9 @@ namespace GLR {
                 var match = from s in itemSets where s.Compare(itemSet) select s;
                 if (match.Count() == 0) {
                     itemSets.Add(new ItemSet<T>(itemSets.Count, itemSet));
-                    itemSets[i].Goto.Add(symbol, itemSets.Last());
+                    itemSets[i].Translation.Add(symbol, itemSets.Last());
                 } else {
-                    itemSets[i].Goto.Add(symbol, match.First());
+                    itemSets[i].Translation.Add(symbol, match.First());
                 }
             }
         }
@@ -67,24 +73,52 @@ namespace GLR {
             for (i = 0; i < items.Count; i++)
                 BuildItemSet(items, i, logger);
 
-            if (logger.Trace)
-                foreach (var item in items)
-                    item.Log(logger);
-
+            foreach (var item in items)
+                item.MakeTables();
+            
             return items;
         }
 
-        private void Log(Logger logger) {
+        private void MakeTables() {
+            foreach (var kv in Translation) {
+                if (kv.Key.IsNonTerminal)
+                    Goto.Add(kv.Key, kv.Value);
+                else if (!kv.Key.IsEpsilon) {
+                    HashSet<ItemSet<T>> set;
+                    if (!Shifts.TryGetValue(kv.Key, out set))
+                        Shifts.Add(kv.Key, set = new HashSet<ItemSet<T>>());
+                    Shifts[kv.Key].Add(kv.Value);
+                }
+            }
+        }
+
+        internal void Log(Logger logger) {
             logger.LogTrace("");
             logger.LogTrace("Set {0}:", SetNumber);
             foreach (var rule in Rules)
                 logger.LogTrace("\t{0}", rule.ToString());
-            foreach (var transistion in Goto) {
+            logger.LogTrace("Transistions");
+            foreach (var transistion in Translation) {
                 logger.LogTrace("{0} → {1}", transistion.Key, transistion.Value.SetNumber);
+            }
+            logger.LogTrace("Shifts");
+            foreach (var kv in Shifts) {
+                logger.LogTrace("{0}: {1}", kv.Key, ItemSetsToString(kv.Value));
+            }
+
+            logger.LogTrace("Gotos");
+            foreach (var kv in Goto) {
+                logger.LogTrace("{0}: {1}", kv.Key, kv.Value.SetNumber);
             }
 
         }
 
+        public static string ItemSetsToString(HashSet<ItemSet<T>> sets) {
+            var builder = new StringBuilder("[");
+            foreach (var set in sets)
+                builder.AppendFormat("{0}{1}", builder.Length > 1 ? "," : "", set.SetNumber);
+            return builder.Append("]").ToString();
+        }
         private static void LogSet(Logger logger, Set<DottedRule<T>> set, int setNumber) {
             logger.LogTrace("");
             logger.LogTrace("Set {0}:", setNumber);

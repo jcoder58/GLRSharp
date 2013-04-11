@@ -127,13 +127,13 @@ namespace GLR {
                 while (!rule.AtEnd) {
                     ExtendedSymbol<T> symbol = new ExtendedSymbol<T>() { Start = rhsSet, Symbol = rule.Symbol };
                     production.RHS.Add(symbol);
-                    rhsSet = rhsSet.Goto[rule.Symbol];
+                    rhsSet = rhsSet.Translation[rule.Symbol];
                     symbol.Next = rhsSet;
                     rule = rule.Next();
                 }
                 var RHSItem = rhsSet;
                 ItemSet<T> lhsSet = null;
-                parentItem.Goto.TryGetValue(parentRule.Production.LHS, out lhsSet);
+                parentItem.Translation.TryGetValue(parentRule.Production.LHS, out lhsSet);
                 extendedLHS.Next = lhsSet;
                 _ExtendedGrammar.Add(production);
                 if (!First.ContainsKey(extendedLHS)) {

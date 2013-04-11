@@ -30,7 +30,13 @@ namespace GLR {
             _Grammar.RHS = grammar < new EOS<T>();
 
             _ItemSets = ItemSet<T>.BuildAll(_Grammar, _Logger);
+
             FirstFollow<T> ff = new FirstFollow<T>(_ItemSets, _Logger);
+
+            if (_Logger.Trace) {
+                foreach (var itemSet in _ItemSets)
+                    itemSet.Log(_Logger);
+            }
         }
 
         public bool Parse(ISource<T> source) {
