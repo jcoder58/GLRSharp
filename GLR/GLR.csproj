@@ -41,7 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DottedRule.cs" />
+    <Compile Include="ExtendedSymbol.cs" />
     <Compile Include="Extension.cs" />
+    <Compile Include="FirstFollow.cs" />
     <Compile Include="Grammar\E.cs" />
     <Compile Include="Grammar\EOS.cs" />
     <Compile Include="Grammar\ISymbol.cs" />

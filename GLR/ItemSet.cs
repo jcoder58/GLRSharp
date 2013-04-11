@@ -9,12 +9,12 @@ namespace GLR {
     class ItemSet<T> {
         public int SetNumber { get; private set; }
         public Set<DottedRule<T>> Rules { get; private set; }
-        public Dictionary<ISymbol<T>, ItemSet<T>> Transistions { get; private set; }
+        public Dictionary<ISymbol<T>, ItemSet<T>> Goto { get; private set; }
 
         public ItemSet(int setNumber, Set<DottedRule<T>> rules) {
             SetNumber = setNumber;
             Rules = new Set<DottedRule<T>>();
-            Transistions = new Dictionary<ISymbol<T>, ItemSet<T>>();
+            Goto = new Dictionary<ISymbol<T>, ItemSet<T>>();
             if (rules != null) {
                 foreach (var rule in rules)
                     Rules.Add(rule);
@@ -47,9 +47,9 @@ namespace GLR {
                 var match = from s in itemSets where s.Compare(itemSet) select s;
                 if (match.Count() == 0) {
                     itemSets.Add(new ItemSet<T>(itemSets.Count, itemSet));
-                    itemSets[i].Transistions.Add(symbol, itemSets.Last());
+                    itemSets[i].Goto.Add(symbol, itemSets.Last());
                 } else {
-                    itemSets[i].Transistions.Add(symbol, match.First());
+                    itemSets[i].Goto.Add(symbol, match.First());
                 }
             }
         }
@@ -79,12 +79,11 @@ namespace GLR {
             logger.LogTrace("Set {0}:", SetNumber);
             foreach (var rule in Rules)
                 logger.LogTrace("\t{0}", rule.ToString());
-            foreach (var transistion in Transistions) {
+            foreach (var transistion in Goto) {
                 logger.LogTrace("{0} → {1}", transistion.Key, transistion.Value.SetNumber);
             }
 
         }
-
 
         private static void LogSet(Logger logger, Set<DottedRule<T>> set, int setNumber) {
             logger.LogTrace("");
