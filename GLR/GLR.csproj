@@ -66,8 +66,10 @@
     <Compile Include="LogLevel.cs" />
     <Compile Include="Match.cs" />
     <Compile Include="Parser.cs" />
+    <Compile Include="ReductionWorkElement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Grammar\String\Source.cs" />
+    <Compile Include="StackNode.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

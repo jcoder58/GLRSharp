@@ -23,7 +23,7 @@ namespace GLR {
         }
 
         public override string ToString() {
-            return Symbol.ToString();
+            return string.Format( "{0}[{1},{2}]", Symbol.ToString(), Start.SetNumber, Next == null ? -1 : Next.SetNumber);
         }
     }
 
@@ -37,7 +37,7 @@ namespace GLR {
         }
 
         public override string ToString() {
-            return Production.ToString();
+            return string.Format("{0} → {1}", LHS, string.Join(" ", from r in RHS select r.ToString()));
         }
     }
 }

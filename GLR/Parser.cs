@@ -44,7 +44,7 @@ namespace GLR {
         private void MakeReductions(FirstFollow<T> ff) {
             foreach (var production in ff.ExtendedGrammar) {
                 var lastSymbol = production.RHS.Last();
-                if (lastSymbol.Symbol is EOS<T>)
+                if (lastSymbol.Symbol.IsEndOfString)
                     continue;
                 HashSet<ISymbol<T>> follow;
                 if (!ff.Follow.TryGetValue(lastSymbol, out follow))
@@ -60,36 +60,159 @@ namespace GLR {
         }
 
 
-        public bool Parse(ISource<T> source, bool lalrOnly = true) {
+        public bool Parse(ISource<T> source, bool lalrOnly = false) {
             if (lalrOnly)
-                return LalrParser(source);
-            
+                return LALRParser(source);
 
-            return false;
+
+            return GLRParser(source); ;
         }
 
-        private bool LalrParser(ISource<T> source) {
+        List<StackNode<T>> _Tops = new List<StackNode<T>>();
+        Queue<ReductionWorkElement<T>> _ReductionWorkQueue = new Queue<ReductionWorkElement<T>>();
+        private bool GLRParser(ISource<T> source) {
+            bool matched = false;
+            _Tops.Clear();
+            _ReductionWorkQueue.Clear();
+
+            if (_Logger.Debug) _Logger.LogDebug("Parsing {0}", source);
+            _Tops.Add(new StackNode<T>(_ItemSets.First()));
+            Match<T> match = new Match<T>() { Length = -1 };
+            while (true) {
+                if (!GetNextToken(ref source, ref match))
+                    break;
+                if (_Logger.Trace)_Logger.LogTrace("R Top: {0}", string.Join(",", _Tops));
+                DoReductions(match);
+                if (_Logger.Trace) _Logger.LogTrace("S Top: {0}", string.Join(",", _Tops));
+                DoShifts(match);
+                if (match.Terminal.IsEndOfString) {
+                    if (_Logger.Trace) _Logger.LogTrace("EOS Top: {0}", string.Join(",", _Tops));
+                    break;
+                }
+            }
+            return matched;
+        }
+
+        private void ReducePath(ReductionWorkElement<T> path, Match<T> match) {
+            var leftSib = path.Path.Last();
+            var rightSib = (from node in _Tops
+                            where node.ItemSet.Goto.ContainsKey(path.Production.LHS) &&
+                            node.ItemSet.Goto[path.Production.LHS] == leftSib.ItemSet
+                            select node).FirstOrDefault();
+            if (rightSib != null) {
+                throw new NotImplementedException();
+            } else {
+                rightSib = new StackNode<T>(leftSib.ItemSet.Goto[path.Production.LHS], leftSib);
+                _Tops.Add(rightSib);
+                if (_Logger.Debug) _Logger.LogDebug("   Reduce {0} Goto {1}", path.Production, rightSib);
+
+                // Any more reductions from new sibling
+                EnqueueReductions(match, rightSib);
+            }
+        }
+
+        private void DoReductions(Match<T> match) {
+            EnqueueReductions(match);
+
+            while (_ReductionWorkQueue.Count > 0) {
+                var tryReduction = _ReductionWorkQueue.Dequeue();
+                if (_Logger.Trace) _Logger.LogTrace("   Dequeue Path {{{0}}} for {1}", ShowPath(tryReduction.Path), tryReduction.Production);
+                ReducePath(tryReduction, match);
+            }
+        }
+
+        private void EnqueueReductions(Match<T> match, StackNode<T> onlyNode=null) {
+            IEnumerable<StackNode<T>> lookAt = _Tops;
+            if (onlyNode != null)
+                lookAt = new[] { onlyNode };
+            var reductions = from node in lookAt 
+                             where node.ItemSet.Reductions.ContainsKey(match.Terminal)
+                             select node;
+            foreach (var node in reductions) {
+                foreach (var reduction in node.ItemSet.Reductions[match.Terminal]) {
+                    var paths = Paths(node, reduction);
+                    foreach (var path in paths) {
+                        _ReductionWorkQueue.Enqueue(new ReductionWorkElement<T>(reduction, path));
+                        if (_Logger.Trace) _Logger.LogTrace("   Enqueue Path {{{0}}} for {1}", ShowPath(path), reduction);
+                    }
+                }
+            }
+        }
+
+        private void DoShifts(Match<T> match) {
+            List<StackNode<T>> previousTops = _Tops;
+            _Tops = new List<StackNode<T>>();
+            var shiftNodes = from node in previousTops
+                             where node.ItemSet.Shifts.ContainsKey(match.Terminal)
+                             select node;
+            foreach (var node in shiftNodes) {
+                var merges = from t in _Tops
+                             where t.ItemSet == node.ItemSet
+                             select t;
+                if (merges.Count() > 0) {
+                    foreach (var merge in merges) {
+                        merge.Nodes.Add(node);
+                    }
+                } else {
+                    foreach (var itemSet in node.ItemSet.Shifts[match.Terminal]) {
+                        StackNode<T> newNode = new StackNode<T>(itemSet, node);
+                        _Tops.Add(newNode);
+                        if (_Logger.Debug) _Logger.LogDebug("   Shift node {0}", itemSet.SetNumber);
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<IEnumerable<StackNode<T>>> Paths(StackNode<T> node, int countLeft) {
+            if (countLeft >= 0) {
+                foreach (var subNode in node.Nodes)
+                    foreach (var n in Paths(subNode, countLeft - 1))
+                        yield return new[] { subNode }.Concat(n);
+            } else
+                yield return new StackNode<T>[0];
+        }
+
+        private IEnumerable<IEnumerable<StackNode<T>>> Paths(StackNode<T> top, Production<T> production) {
+            var count = production.RHS.Count - 1;
+            foreach (var path in Paths(top, count))
+                yield return (new[] { top }.Concat(path)).ToArray();
+        }
+
+
+
+        private string ShowPath(IEnumerable<StackNode<T>> path) {
+            return string.Join(",", from p in path select p.ToString());
+        }
+
+        private bool GetNextToken(ref ISource<T> source, ref Match<T> match) {
+            match.Length = -1;
+            foreach (var terminal in _Grammar.Terminals) {
+                var m = terminal.Match(source);
+                if (m.Success) {
+                    match = m;
+                    source = source.MoveTo(match.Start + match.Length);
+                    if (_Logger.Debug) _Logger.LogDebug("{0}", match);
+                    break;
+                }
+            }
+            return match.Success;
+        }
+
+
+        private bool LALRParser(ISource<T> source) {
             bool matched = false;
             Stack<ItemSet<T>> stack = new Stack<ItemSet<T>>();
             stack.Push(_ItemSets.First());
 
             Match<T> match = new Match<T>() { Length = -1 };
-            bool prevWasReduce = false;
+            bool nextToken = true;
             while (stack.Count > 0) {
                 var itemSet = stack.Peek();
                 ISource<T> prevSource = source;
-                if (!prevWasReduce) {
-                    foreach (var terminal in _Grammar.Terminals) {
-                        var m = terminal.Match(source);
-                        if (m.Success) {
-                            match = m;
-                            source = source.MoveTo(match.Start + match.Length);
-                            if (_Logger.Debug) _Logger.LogDebug("{0}", match);
-                            break;
-                        }
-                    }
+                if (nextToken) {
+                    GetNextToken(ref source, ref match);
                 }
-                prevWasReduce = false;
+                nextToken = true;
                 HashSet<ItemSet<T>> shifts;
                 HashSet<Production<T>> reductions;
                 var shiftsFound = itemSet.Shifts.TryGetValue(match.Terminal, out shifts);
@@ -114,7 +237,7 @@ namespace GLR {
                         var top = stack.Peek();
                         var gotoItem = top.Goto[reduceProduction.LHS];
                         stack.Push(gotoItem);
-                        prevWasReduce = true;
+                        nextToken = false;
                         if (_Logger.Debug) _Logger.LogDebug("Reduce {0}, go to {1}", reduceProduction, gotoItem.SetNumber);
                     }
 
@@ -132,6 +255,7 @@ namespace GLR {
 
             return matched;
         }
+
 
 
 

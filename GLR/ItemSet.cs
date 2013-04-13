@@ -40,7 +40,7 @@ namespace GLR {
                                    Value = grps
                                };
             foreach (var group in symbolsGroup) {
-                var ruleList = group.Value;
+                var ruleList = group.Value.ToList();
                 var symbol = group.Key;
                 var itemSet = new Set<DottedRule<T>>();
                 foreach (var rule in ruleList) {

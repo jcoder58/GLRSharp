@@ -31,27 +31,27 @@ namespace GLR {
             bool changed = false;
             do {
                 changed = false;
-                foreach (var production in _ExtendedGrammar) {
-                    var lastSymbol = production.RHS[production.RHS.Count - 1];
-                    if (lastSymbol.Symbol.IsNonTerminal && !Follow[lastSymbol].IsSupersetOf(Follow[production.LHS])) {
-                        Follow[lastSymbol].UnionWith(Follow[production.LHS]);
+                foreach (var exProduction in _ExtendedGrammar) {
+                    var lastSymbol = exProduction.RHS[exProduction.RHS.Count - 1];
+                    if (lastSymbol.Symbol.IsNonTerminal && !Follow[lastSymbol].IsSupersetOf(Follow[exProduction.LHS])) {
+                        Follow[lastSymbol].UnionWith(Follow[exProduction.LHS]);
                         changed = true;
                     }
-                    for (int i = 0; i < production.RHS.Count - 1; i++) {
-                        var symbol = production.RHS[i];
-                        if (symbol.Symbol.IsNonTerminal) {
-                            for (int j = i + 1; j < production.RHS.Count; j++) {
-                                var nextSymbol = production.RHS[j];
-                                if (nextSymbol.Symbol.IsNonTerminal) {
-                                    if (!Follow[symbol].IsSupersetOf(First[nextSymbol])) {
-                                        Follow[symbol].UnionWith(First[nextSymbol]);
+                    for (int i = 0; i < exProduction.RHS.Count - 1; i++) {
+                        var exSymbol = exProduction.RHS[i];
+                        if (exSymbol.Symbol.IsNonTerminal) {
+                            for (int j = i + 1; j < exProduction.RHS.Count; j++) {
+                                var nextExSymbol = exProduction.RHS[j];
+                                if (nextExSymbol.Symbol.IsNonTerminal) {
+                                    if (!Follow[exSymbol].IsSupersetOf(First[nextExSymbol])) {
+                                        Follow[exSymbol].UnionWith(First[nextExSymbol]);
                                         changed = true;
                                     }
-                                } else if (!Follow[symbol].Contains(nextSymbol.Symbol)) {
-                                    Follow[symbol].Add(nextSymbol.Symbol);
+                                } else if (!Follow[exSymbol].Contains(nextExSymbol.Symbol)) {
+                                    Follow[exSymbol].Add(nextExSymbol.Symbol);
                                     changed = true;
                                 }
-                                if (!nextSymbol.Symbol.IsNullable)
+                                if (!nextExSymbol.Symbol.IsNullable)
                                     break;
                             }
                         }
