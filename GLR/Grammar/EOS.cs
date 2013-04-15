@@ -25,5 +25,14 @@ namespace GLR.Grammar {
         public override string ToString() {
             return "ω";
         }
+
+        public override object Value {
+            get {
+                return ToString();
+            }
+            set {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

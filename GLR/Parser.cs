@@ -7,7 +7,7 @@ using GLR.Grammar;
 
 namespace GLR {
     public class Parser<T> {
-        public Func<string, int, int> Skip { get; set; }
+        public Func<T, int, int> Skip { get; set; }
         public Action<LogLevel, string> Log { get; set; }
         public LogLevel Level { get; set; }
 
@@ -25,8 +25,9 @@ namespace GLR {
             Log = log;
             Level = level;
             _Logger = new Logger(() => Level, Log);
+            Skip = (t, i) => { return i; };
 
-            _Grammar = new NonTerminal<T>("Γ");
+            _Grammar = new NonTerminal<T>("Γ") { IsGrammarRoot = true };
             _Grammar.RHS = grammar < new EOS<T>();
 
             _ItemSets = ItemSet<T>.BuildAll(_Grammar, _Logger);
@@ -64,8 +65,16 @@ namespace GLR {
             if (lalrOnly)
                 return LALRParser(source);
 
-
             return GLRParser(source); ;
+        }
+
+        public IList<object> Matches {
+            get {
+                return (from top in _Tops
+                       from link1 in top.Links
+                       from link2 in link1.Child.Links
+                        select link2.Value).ToList<object>();
+            }
         }
 
         List<StackNode<T>> _Tops = new List<StackNode<T>>();
@@ -76,7 +85,7 @@ namespace GLR {
             _ReductionWorkQueue.Clear();
 
             if (_Logger.Debug) _Logger.LogDebug("Parsing {0}", source);
-            _Tops.Add(new StackNode<T>(_ItemSets.First()));
+            _Tops.Add(new StackNode<T>(_ItemSets.First(), null, null));
             Match<T> match = new Match<T>() { Length = -1 };
             while (true) {
                 if (!GetNextToken(ref source, ref match))
@@ -87,6 +96,8 @@ namespace GLR {
                 DoShifts(match);
                 if (match.Terminal.IsEndOfString) {
                     if (_Logger.Trace) _Logger.LogTrace("EOS Top: {0}", string.Join(",", _Tops));
+                    _Tops.RemoveAll(top => !top.ItemSet.AcceptState);
+                    matched = _Tops.Count > 0;
                     break;
                 }
             }
@@ -94,20 +105,47 @@ namespace GLR {
         }
 
         private void ReducePath(ReductionWorkElement<T> path, Match<T> match) {
+            var attributes = (from p in path.Path where p.LinkToParent != null select p.LinkToParent.Value).Reverse().ToList<object>();
+            var value = path.Production.Action(attributes);
+            if (_Logger.Debug) _Logger.LogDebug("Production: {0} Value {1}", path.Production, value);
             var leftSib = path.Path.Last();
             var rightSib = (from node in _Tops
                             where node.ItemSet.Goto.ContainsKey(path.Production.LHS) &&
-                            node.ItemSet.Goto[path.Production.LHS] == leftSib.ItemSet
+                            node.ItemSet.Goto[path.Production.LHS] == leftSib.Node.ItemSet
                             select node).FirstOrDefault();
             if (rightSib != null) {
                 throw new NotImplementedException();
             } else {
-                rightSib = new StackNode<T>(leftSib.ItemSet.Goto[path.Production.LHS], leftSib);
+                rightSib = new StackNode<T>(leftSib.Node.ItemSet.Goto[path.Production.LHS], leftSib.Node, value);
                 _Tops.Add(rightSib);
                 if (_Logger.Debug) _Logger.LogDebug("   Reduce {0} Goto {1}", path.Production, rightSib);
 
                 // Any more reductions from new sibling
                 EnqueueReductions(match, rightSib);
+            }
+        }
+
+        private void DoShifts(Match<T> match) {
+            List<StackNode<T>> previousTops = _Tops;
+            _Tops = new List<StackNode<T>>();
+            var shiftNodes = from node in previousTops
+                             where node.ItemSet.Shifts.ContainsKey(match.Terminal)
+                             select node;
+            foreach (var node in shiftNodes) {
+                var merges = from t in _Tops
+                             where t.ItemSet == node.ItemSet
+                             select t;
+                if (merges.Count() > 0) {
+                    foreach (var merge in merges) {
+                        merge.Links.Add(new StackLink<T>() { Parent = merge, Child = node, Value = null });
+                    }
+                } else {
+                    foreach (var itemSet in node.ItemSet.Shifts[match.Terminal]) {
+                        StackNode<T> newNode = new StackNode<T>(itemSet, node, match.Terminal.Value);
+                        _Tops.Add(newNode);
+                        if (_Logger.Debug) _Logger.LogDebug("   Shift node {0}", itemSet.SetNumber);
+                    }
+                }
             }
         }
 
@@ -139,55 +177,32 @@ namespace GLR {
             }
         }
 
-        private void DoShifts(Match<T> match) {
-            List<StackNode<T>> previousTops = _Tops;
-            _Tops = new List<StackNode<T>>();
-            var shiftNodes = from node in previousTops
-                             where node.ItemSet.Shifts.ContainsKey(match.Terminal)
-                             select node;
-            foreach (var node in shiftNodes) {
-                var merges = from t in _Tops
-                             where t.ItemSet == node.ItemSet
-                             select t;
-                if (merges.Count() > 0) {
-                    foreach (var merge in merges) {
-                        merge.Nodes.Add(node);
-                    }
-                } else {
-                    foreach (var itemSet in node.ItemSet.Shifts[match.Terminal]) {
-                        StackNode<T> newNode = new StackNode<T>(itemSet, node);
-                        _Tops.Add(newNode);
-                        if (_Logger.Debug) _Logger.LogDebug("   Shift node {0}", itemSet.SetNumber);
-                    }
-                }
-            }
-        }
-
-        private IEnumerable<IEnumerable<StackNode<T>>> Paths(StackNode<T> node, int countLeft) {
+        private IEnumerable<IEnumerable<Path<T>>> Paths(StackNode<T> node, int countLeft) {
             if (countLeft >= 0) {
-                foreach (var subNode in node.Nodes)
-                    foreach (var n in Paths(subNode, countLeft - 1))
-                        yield return new[] { subNode }.Concat(n);
+                foreach (var link in node.Links)
+                    foreach (var n in Paths(link.Child, countLeft - 1))
+                        yield return new[] {new Path<T>() { Node= link.Child, LinkToParent = link } }.Concat(n);
             } else
-                yield return new StackNode<T>[0];
+                yield return new Path<T>[0];
         }
 
-        private IEnumerable<IEnumerable<StackNode<T>>> Paths(StackNode<T> top, Production<T> production) {
+        private IEnumerable<IEnumerable<Path<T>>> Paths(StackNode<T> top, Production<T> production) {
             var count = production.RHS.Count - 1;
             foreach (var path in Paths(top, count))
-                yield return (new[] { top }.Concat(path)).ToArray();
+                yield return (new[] { new Path<T>() { Node= top, LinkToParent = null} }.Concat(path)).ToArray();
         }
 
 
 
-        private string ShowPath(IEnumerable<StackNode<T>> path) {
+        private string ShowPath(IEnumerable<Path<T>> path) {
             return string.Join(",", from p in path select p.ToString());
         }
 
         private bool GetNextToken(ref ISource<T> source, ref Match<T> match) {
             match.Length = -1;
+            var skipSource = source.Skip(Skip);
             foreach (var terminal in _Grammar.Terminals) {
-                var m = terminal.Match(source);
+                var m = terminal.Match(skipSource);
                 if (m.Success) {
                     match = m;
                     source = source.MoveTo(match.Start + match.Length);

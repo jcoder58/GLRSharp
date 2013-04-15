@@ -17,5 +17,7 @@ namespace GLR.Grammar {
         Set<Terminal<T>> Terminals { get; }
         Set<NonTerminal<T>> NonTerminals { get; }
 
+
+        object Value { get; set; }
     }
 }

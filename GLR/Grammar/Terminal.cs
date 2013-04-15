@@ -36,5 +36,8 @@ namespace GLR.Grammar {
                 visited.Add(this);
             action(this);
         }
+
+
+        public abstract object Value { get; set; }
     }
 }

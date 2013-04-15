@@ -15,6 +15,7 @@ namespace GLR.Grammar {
 
         public Production<T> this[Func<IList<object>, object> index] {
             get {
+                Action = index;
                 return this;
             }
             set {
@@ -27,6 +28,9 @@ namespace GLR.Grammar {
 
         private List<ISymbol<T>> _Symbols = new List<ISymbol<T>>();
 
+        public Production() {
+            Action = attr => attr[0];
+        }
 
         public int IndexOf(ISymbol<T> item) {
             return _Symbols.IndexOf(item);
@@ -141,8 +145,7 @@ namespace GLR.Grammar {
         public override string ToString() {
             StringBuilder b = new StringBuilder();
             b.AppendFormat("{0}{1} → ", LHS.Name, LHS.IsNullable ? "*" : "");
-            foreach (var r in RHS)
-                b.Append(r);
+            b.Append(string.Join(" ", from rhs in RHS select rhs.ToString()));
             return b.ToString();
         }
 

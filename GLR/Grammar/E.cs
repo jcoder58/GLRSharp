@@ -21,5 +21,14 @@ namespace GLR.Grammar {
             get { return false; }
         }
 
+
+        public override object Value {
+            get {
+                return ToString();
+            }
+            set {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

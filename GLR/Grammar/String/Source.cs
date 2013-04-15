@@ -26,7 +26,7 @@ namespace GLR.Grammar.String {
         public ISource<string> Skip(Func<string, int, int> Skip) {
             int newOffset = Skip(SourceText, Offset);
             if (newOffset != Offset)
-                return new Source(SourceText, newOffset);
+                return MoveTo( newOffset);
             return this;
         }
         

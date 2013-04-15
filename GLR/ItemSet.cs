@@ -14,6 +14,13 @@ namespace GLR {
         public Dictionary<ISymbol<T>, HashSet<ItemSet<T>>> Shifts { get; private set; }
         public Dictionary<ISymbol<T>, HashSet<Production<T>>> Reductions {get; private set;}
 
+        public bool AcceptState {
+            get {
+                var rule = Rules.First();
+                return Rules.Count == 1 && rule.Production.LHS.IsGrammarRoot && rule.AtEnd;
+            }
+        }
+
         public ItemSet(int setNumber, Set<DottedRule<T>> rules) {
             SetNumber = setNumber;
             Rules = new Set<DottedRule<T>>();

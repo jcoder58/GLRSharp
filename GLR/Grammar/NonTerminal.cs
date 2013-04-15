@@ -25,12 +25,12 @@ namespace GLR.Grammar {
         public bool IsNonTerminal { get { return true; } }
         public bool IsTerminal { get { return !IsNonTerminal; } }
 
-        public object Value { get; set; }
-
         public string Name { get; private set; }
+        public bool IsGrammarRoot { get; set; }
 
         public NonTerminal(string name = "") {
             Name = name;
+            IsGrammarRoot = false;
         }
 
         bool? _IsNullable = null;
@@ -134,6 +134,16 @@ namespace GLR.Grammar {
                 foreach (var production in _Productions)
                     production.Visit(action, visited);
                 action(this);
+            }
+        }
+
+
+        public object Value {
+            get {
+                throw new NotImplementedException();
+            }
+            set {
+                throw new NotImplementedException();
             }
         }
     }

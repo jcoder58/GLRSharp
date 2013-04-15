@@ -25,8 +25,22 @@ namespace GLR.Grammar.String {
             return match;
         }
 
+        public static ProductionList<string> operator |(StringTerminal a, StringTerminal b) {
+            return new ProductionList<string>() { a, b };
+        }
+
+
         public override string ToString() {
             return string.Format("'{0}'", MatchText);
+        }
+
+        public override object Value {
+            get {
+                return MatchText;
+            }
+            set {
+                throw new NotImplementedException();
+            }
         }
     }
 }

@@ -8,5 +8,9 @@ namespace GLR.Grammar.String {
         public static StringTerminal T(this string terminal) {
             return new StringTerminal(terminal);
         }
+
+        public static Production P(this Terminal terminal) {
+            return new Production() { terminal };
+        }
     }
 }
