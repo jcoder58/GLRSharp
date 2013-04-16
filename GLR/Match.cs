@@ -9,13 +9,20 @@ namespace GLR {
     public class Match<T> {
         public ISource<T> Source { get; internal set; }
         public int Start { get; internal set; }
-        public int Length { get; internal set; }
+        public int Length { get; set; }
         public ISymbol<T> Terminal { get; internal set; }
 
         public bool Success { get { return Length >= 0; } }
 
         public Match() {
             Length = Start = -1;
+        }
+
+        public Match(ISource<T> source, int start, int length, ISymbol<T> terminal) {
+            Source = source;
+            Start = start;
+            Length = length;
+            Terminal = terminal;
         }
 
         public override string ToString() {

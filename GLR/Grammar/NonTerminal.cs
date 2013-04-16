@@ -98,6 +98,16 @@ namespace GLR.Grammar {
             return a < b;
         }
 
+        public static ProductionList<T> operator |(NonTerminal<T> a, NonTerminal<T> b) {
+            ProductionList<T> productions = new ProductionList<T>() { a, b };
+            return productions;
+        }
+
+        public static ProductionList<T> operator |(NonTerminal<T> a, Terminal<T> b) {
+            ProductionList<T> productions = new ProductionList<T>() { a, b };
+            return productions;
+        }
+
         #endregion
 
 
