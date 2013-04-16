@@ -25,13 +25,17 @@ namespace EnglishGrammar {
             var endOfMatch = sourceString.Offset + MatchText.Length;
             if (sourceString != null && 
                 endOfMatch <= sourceString.SourceText.Length &&
-                sourceString.SourceText.IndexOf(MatchText, sourceString.Offset, MatchText.Length) == sourceString.Offset &&
+                CompareToMatch(sourceString) &&
                 (endOfMatch == sourceString.SourceText.Length ||
                 !char.IsLetter(sourceString.SourceText[endOfMatch]))
                 ) {
                     match.Length = MatchText.Length;
             }
             return match;
+        }
+
+        private bool CompareToMatch(Source sourceString) {
+            return sourceString.SourceText.IndexOf(MatchText, sourceString.Offset, MatchText.Length, StringComparison.InvariantCultureIgnoreCase) == sourceString.Offset;
         }
 
         public static ProductionList<string> operator |(WordTerminal a, WordTerminal b) {

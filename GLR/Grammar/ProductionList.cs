@@ -74,6 +74,11 @@ namespace GLR.Grammar {
             return a;
         }
 
+        public static ProductionList<T> operator |(ProductionList<T> a, ProductionList<T> b) {
+            a.AddRange(b);
+            return a;
+        }
+
         public static ProductionList<T> operator |(ProductionList<T> a, NonTerminal<T> b) {
             a.Add(b);
             return a;
