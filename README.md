@@ -11,7 +11,7 @@ GLRSharp is a General LR parser implemented as a set of combinatorial functions 
 
 GLRSharp implements a simple DSL embedded in C#.  The following examples shows most of the features of the DSL.  The example is based on the “Groucho Grammar” from Chapter 8 of Natural Language Processing with Python.  The full source code can be found in the GLRTest project
 
-```
+```C#
 // Pre-declare the NonTerminals.  
 NonTerminal S = new NonTerminal("S");
 NonTerminal PP = new NonTerminal("PP");
